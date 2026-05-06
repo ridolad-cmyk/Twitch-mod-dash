@@ -5,8 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TwitchMod Pro</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -173,7 +173,7 @@ select.input{cursor:pointer}
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-const CLIENT_ID = “beamv6tmu44j7xhkgx376x6t9iv80x”;
+const CLIENT_ID = “YOUR_CLIENT_ID_HERE”;
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = [
 “user:read:email”,“moderation:read”,“moderator:manage:banned_users”,
@@ -249,6 +249,46 @@ React.createElement(“div”, { className: “modal-body” }, children)
 function Toast({ toasts }) {
 return React.createElement(“div”, { className: “toast-container” },
 toasts.map(t => React.createElement(“div”, { key: t.id, className: `toast toast-${t.type}` }, t.msg))
+);
+}
+
+function UserLookupModal({ token, me, channel, onBan, onTimeout, onUnban, onClose, toast }) {
+const [login, setLogin] = useState(””);
+const [user, setUser] = useState(null);
+const [loading, setLoading] = useState(false);
+
+async function search() {
+if (!login.trim()) return;
+setLoading(true);
+try {
+const d = await twitchAPI(`/users?login=${login.trim()}`, token);
+const u = d.data?.[0];
+if (!u) { toast(“User not found”, “error”); return; }
+setUser(u);
+} catch (e) { toast(e.message, “error”); }
+finally { setLoading(false); }
+}
+
+return React.createElement(Modal, { title: “User Lookup”, onClose },
+React.createElement(“div”, { className: “user-lookup” },
+React.createElement(“div”, { className: “search-row” },
+React.createElement(“input”, { className: “input”, placeholder: “Username”, value: login, onChange: e => setLogin(e.target.value), onKeyDown: e => e.key===“Enter” && search() }),
+React.createElement(“button”, { className: “btn-primary”, onClick: search }, loading ? “…” : “Search”)
+),
+user && React.createElement(“div”, { className: “user-profile” },
+React.createElement(“img”, { src: user.profile_image_url, alt: “”, className: “avatar-md” }),
+React.createElement(“div”, { className: “user-info” },
+React.createElement(“strong”, null, user.display_name),
+React.createElement(“span”, null, `@${user.login}`),
+React.createElement(“span”, { className: “user-desc” }, user.description?.slice(0,80) || “No description”)
+),
+React.createElement(“div”, { className: “user-actions-btns” },
+React.createElement(“button”, { className: “btn-warning”, onClick: () => onTimeout({ userId: user.id, displayName: user.display_name }) }, “Timeout”),
+React.createElement(“button”, { className: “btn-danger”, onClick: () => onBan({ userId: user.id, displayName: user.display_name }) }, “Ban”),
+React.createElement(“button”, { className: “btn-ghost”, onClick: () => onUnban(user.id) }, “Unban”)
+)
+)
+)
 );
 }
 
@@ -392,91 +432,90 @@ await apiAction(() => twitchAPI(`/raids?from_broadcaster_id=${selectedChannel.br
 function renderModal() {
 if (!modal) return null;
 const { type, data } = modal;
+
+if (type === “edit-title”) {
 let newTitle = channelInfo?.title || “”;
-
-```
-if (type === "edit-title") return React.createElement(Modal, { title: "Edit Stream Title", onClose: () => setModal(null) },
-  React.createElement("input", { className: "input", defaultValue: newTitle, onChange: e => newTitle = e.target.value, placeholder: "Stream title" }),
-  React.createElement("button", { className: "btn-primary", onClick: () => updateTitle(newTitle) }, "Save Title")
+return React.createElement(Modal, { title: “Edit Stream Title”, onClose: () => setModal(null) },
+React.createElement(“input”, { className: “input”, defaultValue: newTitle, onChange: e => newTitle = e.target.value, placeholder: “Stream title” }),
+React.createElement(“button”, { className: “btn-primary”, onClick: () => updateTitle(newTitle) }, “Save Title”)
 );
-
-if (type === "ban-user") {
-  let reason = "";
-  return React.createElement(Modal, { title: `Ban ${data.displayName}`, onClose: () => setModal(null) },
-    React.createElement("p", { className: "modal-note" }, "This will permanently ban the user."),
-    React.createElement("input", { className: "input", placeholder: "Reason (optional)", onChange: e => reason = e.target.value }),
-    React.createElement("button", { className: "btn-danger", onClick: () => banUser(data.userId, null, reason) }, "Confirm Ban")
-  );
 }
 
-if (type === "timeout") {
-  let duration = "600"; let reason = "";
-  return React.createElement(Modal, { title: `Timeout ${data.displayName}`, onClose: () => setModal(null) },
-    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "600" },
-      React.createElement("option", { value: "60" }, "1 minute"),
-      React.createElement("option", { value: "300" }, "5 minutes"),
-      React.createElement("option", { value: "600" }, "10 minutes"),
-      React.createElement("option", { value: "1800" }, "30 minutes"),
-      React.createElement("option", { value: "3600" }, "1 hour"),
-      React.createElement("option", { value: "86400" }, "1 day"),
-      React.createElement("option", { value: "604800" }, "1 week")
-    ),
-    React.createElement("input", { className: "input", placeholder: "Reason (optional)", onChange: e => reason = e.target.value }),
-    React.createElement("button", { className: "btn-warning", onClick: () => banUser(data.userId, duration, reason) }, "Timeout")
-  );
+if (type === “ban-user”) {
+let reason = “”;
+return React.createElement(Modal, { title: `Ban ${data.displayName}`, onClose: () => setModal(null) },
+React.createElement(“p”, { className: “modal-note” }, “This will permanently ban the user.”),
+React.createElement(“input”, { className: “input”, placeholder: “Reason (optional)”, onChange: e => reason = e.target.value }),
+React.createElement(“button”, { className: “btn-danger”, onClick: () => banUser(data.userId, null, reason) }, “Confirm Ban”)
+);
 }
 
-if (type === "poll") {
-  let ptitle = ""; let choices = ["","","","",""]; let duration = "60";
-  return React.createElement(Modal, { title: "Create Poll", onClose: () => setModal(null) },
-    React.createElement("input", { className: "input", placeholder: "Poll question", onChange: e => ptitle = e.target.value }),
-    ...[0,1,2,3,4].map(i => React.createElement("input", { key: i, className: "input", placeholder: `Choice ${i+1}${i<2?" (required)":" (optional)"}`, onChange: e => { choices[i] = e.target.value; } })),
-    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "60" },
-      React.createElement("option", { value: "30" }, "30 seconds"),
-      React.createElement("option", { value: "60" }, "1 minute"),
-      React.createElement("option", { value: "120" }, "2 minutes"),
-      React.createElement("option", { value: "300" }, "5 minutes")
-    ),
-    React.createElement("button", { className: "btn-primary", onClick: () => createPoll(ptitle, choices, duration) }, "Create Poll")
-  );
+if (type === “timeout”) {
+let duration = “600”; let reason = “”;
+return React.createElement(Modal, { title: `Timeout ${data.displayName}`, onClose: () => setModal(null) },
+React.createElement(“select”, { className: “input”, onChange: e => duration = e.target.value, defaultValue: “600” },
+React.createElement(“option”, { value: “60” }, “1 minute”),
+React.createElement(“option”, { value: “300” }, “5 minutes”),
+React.createElement(“option”, { value: “600” }, “10 minutes”),
+React.createElement(“option”, { value: “1800” }, “30 minutes”),
+React.createElement(“option”, { value: “3600” }, “1 hour”),
+React.createElement(“option”, { value: “86400” }, “1 day”),
+React.createElement(“option”, { value: “604800” }, “1 week”)
+),
+React.createElement(“input”, { className: “input”, placeholder: “Reason (optional)”, onChange: e => reason = e.target.value }),
+React.createElement(“button”, { className: “btn-warning”, onClick: () => banUser(data.userId, duration, reason) }, “Timeout”)
+);
 }
 
-if (type === "prediction") {
-  let ptitle = ""; let outcomes = ["",""]; let duration = "120";
-  return React.createElement(Modal, { title: "Create Prediction", onClose: () => setModal(null) },
-    React.createElement("input", { className: "input", placeholder: "Prediction title", onChange: e => ptitle = e.target.value }),
-    React.createElement("input", { className: "input", placeholder: "Outcome 1 (e.g. Yes)", onChange: e => { outcomes[0] = e.target.value; } }),
-    React.createElement("input", { className: "input", placeholder: "Outcome 2 (e.g. No)", onChange: e => { outcomes[1] = e.target.value; } }),
-    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "120" },
-      React.createElement("option", { value: "30" }, "30 seconds"),
-      React.createElement("option", { value: "60" }, "1 minute"),
-      React.createElement("option", { value: "120" }, "2 minutes"),
-      React.createElement("option", { value: "300" }, "5 minutes")
-    ),
-    React.createElement("button", { className: "btn-primary", onClick: () => createPrediction(ptitle, outcomes, duration) }, "Start Prediction")
-  );
+if (type === “poll”) {
+let ptitle = “”; let choices = [””,””,””,””,””]; let duration = “60”;
+return React.createElement(Modal, { title: “Create Poll”, onClose: () => setModal(null) },
+React.createElement(“input”, { className: “input”, placeholder: “Poll question”, onChange: e => ptitle = e.target.value }),
+…[0,1,2,3,4].map(i => React.createElement(“input”, { key: i, className: “input”, placeholder: `Choice ${i+1}${i<2?" (required)":" (optional)"}`, onChange: e => { choices[i] = e.target.value; } })),
+React.createElement(“select”, { className: “input”, onChange: e => duration = e.target.value, defaultValue: “60” },
+React.createElement(“option”, { value: “30” }, “30 seconds”),
+React.createElement(“option”, { value: “60” }, “1 minute”),
+React.createElement(“option”, { value: “120” }, “2 minutes”),
+React.createElement(“option”, { value: “300” }, “5 minutes”)
+),
+React.createElement(“button”, { className: “btn-primary”, onClick: () => createPoll(ptitle, choices, duration) }, “Create Poll”)
+);
 }
 
-if (type === "raid") {
-  let target = "";
-  return React.createElement(Modal, { title: "Start a Raid", onClose: () => setModal(null) },
-    React.createElement("input", { className: "input", placeholder: "Channel to raid", onChange: e => target = e.target.value }),
-    React.createElement("button", { className: "btn-primary", onClick: () => startRaid(target) }, "Start Raid")
-  );
+if (type === “prediction”) {
+let ptitle = “”; let outcomes = [””,””]; let duration = “120”;
+return React.createElement(Modal, { title: “Create Prediction”, onClose: () => setModal(null) },
+React.createElement(“input”, { className: “input”, placeholder: “Prediction title”, onChange: e => ptitle = e.target.value }),
+React.createElement(“input”, { className: “input”, placeholder: “Outcome 1 (e.g. Yes)”, onChange: e => { outcomes[0] = e.target.value; } }),
+React.createElement(“input”, { className: “input”, placeholder: “Outcome 2 (e.g. No)”, onChange: e => { outcomes[1] = e.target.value; } }),
+React.createElement(“select”, { className: “input”, onChange: e => duration = e.target.value, defaultValue: “120” },
+React.createElement(“option”, { value: “30” }, “30 seconds”),
+React.createElement(“option”, { value: “60” }, “1 minute”),
+React.createElement(“option”, { value: “120” }, “2 minutes”),
+React.createElement(“option”, { value: “300” }, “5 minutes”)
+),
+React.createElement(“button”, { className: “btn-primary”, onClick: () => createPrediction(ptitle, outcomes, duration) }, “Start Prediction”)
+);
 }
 
-if (type === "user-lookup") {
-  return React.createElement(UserLookupModal, {
-    token, me, channel: selectedChannel,
-    onBan: u => setModal({ type: "ban-user", data: u }),
-    onTimeout: u => setModal({ type: "timeout", data: u }),
-    onUnban: async id => { await unbanUser(id); setModal(null); },
-    onClose: () => setModal(null), toast
-  });
+if (type === “raid”) {
+let target = “”;
+return React.createElement(Modal, { title: “Start a Raid”, onClose: () => setModal(null) },
+React.createElement(“input”, { className: “input”, placeholder: “Channel to raid”, onChange: e => target = e.target.value }),
+React.createElement(“button”, { className: “btn-primary”, onClick: () => startRaid(target) }, “Start Raid”)
+);
+}
+
+if (type === “user-lookup”) {
+return React.createElement(UserLookupModal, {
+token, me, channel: selectedChannel,
+onBan: u => setModal({ type: “ban-user”, data: u }),
+onTimeout: u => setModal({ type: “timeout”, data: u }),
+onUnban: async id => { await unbanUser(id); setModal(null); },
+onClose: () => setModal(null), toast
+});
 }
 return null;
-```
-
 }
 
 // SETUP SCREEN
@@ -557,174 +596,131 @@ React.createElement(“button”, { className: “btn-ghost-sm”, onClick: () =
 )
 ),
 
-```
 // Main
-React.createElement("main", { className: "main-content" },
-  activeTab === "chat" && React.createElement("div", { className: "chat-panel" },
-    React.createElement("div", { className: "chat-header" },
-      React.createElement("h2", null, "Live Chat ", React.createElement("span", { className: "chat-channel" }, `#${selectedChannel.broadcaster_login}`)),
-      React.createElement("button", { className: "btn-danger-sm", onClick: clearChat }, "Clear Chat")
-    ),
-    React.createElement("div", { className: "chat-messages", ref: chatRef },
-      chat.length === 0 ? React.createElement("div", { className: "chat-empty" }, "Waiting for messages...") : null,
-      chat.map(msg => React.createElement("div", { key: msg.id, className: "chat-message" },
-        React.createElement(Badge, { badges: msg.badges }),
-        React.createElement("span", { className: "chat-username", style: { color: msg.color || "#9147ff" } }, msg.displayName),
-        React.createElement("span", { className: "chat-text" }, " " + msg.text),
-        React.createElement("div", { className: "chat-actions" },
-          React.createElement("button", { onClick: () => setModal({ type: "timeout", data: { userId: msg.user, displayName: msg.displayName } }), title: "Timeout" }, "⏱"),
-          React.createElement("button", { onClick: () => setModal({ type: "ban-user", data: { userId: msg.user, displayName: msg.displayName } }), title: "Ban" }, "🔨"),
-          React.createElement("button", { onClick: () => deleteMessage(msg.id), title: "Delete" }, "🗑")
-        )
-      ))
-    ),
-    React.createElement("div", { className: "chat-input-row" },
-      React.createElement("input", { className: "chat-input", value: chatInput, onChange: e => setChatInput(e.target.value), onKeyDown: e => e.key==="Enter" && sendChat(), placeholder: `Chat as ${me?.display_name}...` }),
-      React.createElement("button", { className: "btn-send", onClick: sendChat }, "Send")
-    )
-  ),
+React.createElement(“main”, { className: “main-content” },
+activeTab === “chat” && React.createElement(“div”, { className: “chat-panel” },
+React.createElement(“div”, { className: “chat-header” },
+React.createElement(“h2”, null, “Live Chat “, React.createElement(“span”, { className: “chat-channel” }, `#${selectedChannel.broadcaster_login}`)),
+React.createElement(“button”, { className: “btn-danger-sm”, onClick: clearChat }, “Clear Chat”)
+),
+React.createElement(“div”, { className: “chat-messages”, ref: chatRef },
+chat.length === 0 ? React.createElement(“div”, { className: “chat-empty” }, “Waiting for messages…”) : null,
+chat.map(msg => React.createElement(“div”, { key: msg.id, className: “chat-message” },
+React.createElement(Badge, { badges: msg.badges }),
+React.createElement(“span”, { className: “chat-username”, style: { color: msg.color || “#9147ff” } }, msg.displayName),
+React.createElement(“span”, { className: “chat-text” }, “ “ + msg.text),
+React.createElement(“div”, { className: “chat-actions” },
+React.createElement(“button”, { onClick: () => setModal({ type: “timeout”, data: { userId: msg.user, displayName: msg.displayName } }), title: “Timeout” }, “⏱”),
+React.createElement(“button”, { onClick: () => setModal({ type: “ban-user”, data: { userId: msg.user, displayName: msg.displayName } }), title: “Ban” }, “🔨”),
+React.createElement(“button”, { onClick: () => deleteMessage(msg.id), title: “Delete” }, “🗑”)
+)
+))
+),
+React.createElement(“div”, { className: “chat-input-row” },
+React.createElement(“input”, { className: “chat-input”, value: chatInput, onChange: e => setChatInput(e.target.value), onKeyDown: e => e.key===“Enter” && sendChat(), placeholder: `Chat as ${me?.display_name}...` }),
+React.createElement(“button”, { className: “btn-send”, onClick: sendChat }, “Send”)
+)
+),
 
-  activeTab === "stream" && React.createElement("div", { className: "stream-panel" },
-    React.createElement("div", { className: "stream-embed-wrap" },
-      streamInfo
-        ? React.createElement("iframe", { src: `https://player.twitch.tv/?channel=${selectedChannel.broadcaster_login}&parent=${window.location.hostname}&muted=false`, allowFullScreen: true, frameBorder: "0", className: "stream-embed", title: "Twitch Stream" })
-        : React.createElement("div", { className: "offline-placeholder" },
-            React.createElement("svg", { width: 64, height: 64, viewBox: "0 0 24 24", fill: "#9147ff" }, React.createElement("path", { d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" })),
-            React.createElement("p", null, "Channel is currently offline")
-          )
-    ),
-    React.createElement("div", { className: "stream-info-card" },
-      React.createElement("div", { className: "stream-info-row" },
-        React.createElement("span", { className: "info-label" }, "Title"),
-        React.createElement("span", { className: "info-value" }, channelInfo?.title || "—"),
-        React.createElement("button", { className: "btn-edit", onClick: () => setModal({ type: "edit-title" }) }, "Edit")
-      ),
-      React.createElement("div", { className: "stream-info-row" },
-        React.createElement("span", { className: "info-label" }, "Category"),
-        React.createElement("span", { className: "info-value" }, channelInfo?.game_name || "—")
-      ),
-      streamInfo && React.createElement(React.Fragment, null,
-        React.createElement("div", { className: "stream-info-row" },
-          React.createElement("span", { className: "info-label" }, "Viewers"),
-          React.createElement("span", { className: "info-value" }, streamInfo.viewer_count?.toLocaleString())
-        )
-      ),
-      React.createElement("div", { className: "btn-row mt" },
-        React.createElement("button", { className: "btn-purple", onClick: () => setModal({ type: "raid" }) }, "⚡ Start Raid")
-      )
-    )
-  ),
+activeTab === “stream” && React.createElement(“div”, { className: “stream-panel” },
+React.createElement(“div”, { className: “stream-embed-wrap” },
+streamInfo
+? React.createElement(“iframe”, { src: `https://player.twitch.tv/?channel=${selectedChannel.broadcaster_login}&parent=${window.location.hostname}&muted=false`, allowFullScreen: true, frameBorder: “0”, className: “stream-embed”, title: “Twitch Stream” })
+: React.createElement(“div”, { className: “offline-placeholder” },
+React.createElement(“svg”, { width: 64, height: 64, viewBox: “0 0 24 24”, fill: “#9147ff” }, React.createElement(“path”, { d: “M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z” })),
+React.createElement(“p”, null, “Channel is currently offline”)
+)
+),
+React.createElement(“div”, { className: “stream-info-card” },
+React.createElement(“div”, { className: “stream-info-row” },
+React.createElement(“span”, { className: “info-label” }, “Title”),
+React.createElement(“span”, { className: “info-value” }, channelInfo?.title || “—”),
+React.createElement(“button”, { className: “btn-edit”, onClick: () => setModal({ type: “edit-title” }) }, “Edit”)
+),
+React.createElement(“div”, { className: “stream-info-row” },
+React.createElement(“span”, { className: “info-label” }, “Category”),
+React.createElement(“span”, { className: “info-value” }, channelInfo?.game_name || “—”)
+),
+streamInfo && React.createElement(React.Fragment, null,
+React.createElement(“div”, { className: “stream-info-row” },
+React.createElement(“span”, { className: “info-label” }, “Viewers”),
+React.createElement(“span”, { className: “info-value” }, streamInfo.viewer_count?.toLocaleString())
+)
+),
+React.createElement(“div”, { className: “btn-row mt” },
+React.createElement(“button”, { className: “btn-purple”, onClick: () => setModal({ type: “raid” }) }, “⚡ Start Raid”)
+)
+)
+),
 
-  activeTab === "modtools" && React.createElement("div", { className: "modtools-panel" },
-    React.createElement("h2", null, "Moderator Tools"),
-    React.createElement("section", { className: "mod-section" },
-      React.createElement("h3", null, "Chat Settings"),
-      React.createElement("div", { className: "toggle-grid" },
-        [
-          { key:"slow_mode", label:"Slow Mode", val:slowMode, set:setSlowMode },
-          { key:"subscriber_mode", label:"Subs Only", val:subOnly, set:setSubOnly },
-          { key:"emote_mode", label:"Emotes Only", val:emotesOnly, set:setEmotesOnly },
-          { key:"follower_mode", label:"Followers Only", val:followerOnly, set:setFollowerOnly },
-        ].map(({ key, label, val, set }) => React.createElement("label", { key, className: "toggle-item" },
-          React.createElement("span", null, label),
-          React.createElement("div", { className: `toggle ${val?"on":""}`, onClick: () => { const next=!val; set(next); toggleChatSetting(key, next); } },
-            React.createElement("div", { className: "toggle-thumb" })
-          )
-        ))
-      )
-    ),
-    React.createElement("section", { className: "mod-section" },
-      React.createElement("h3", null, "User Lookup"),
-      React.createElement("div", { className: "user-search-row" },
-        React.createElement("input", { className: "input", placeholder: "Search username...", id: "userSearchInput" }),
-        React.createElement("button", { className: "btn-primary", onClick: () => setModal({ type: "user-lookup", data: { login: document.getElementById("userSearchInput").value } }) }, "Lookup")
-      )
-    ),
-    React.createElement("section", { className: "mod-section" },
-      React.createElement("h3", null, "Quick Actions"),
-      React.createElement("div", { className: "quick-actions" },
-        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "poll" }) }, "📊 Create Poll"),
-        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "prediction" }) }, "🔮 Prediction"),
-        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "raid" }) }, "⚡ Raid"),
-        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "edit-title" }) }, "✏️ Edit Title"),
-        React.createElement("button", { className: "qa-btn danger", onClick: clearChat }, "🗑 Clear Chat")
-      )
-    )
-  ),
+activeTab === “modtools” && React.createElement(“div”, { className: “modtools-panel” },
+React.createElement(“h2”, null, “Moderator Tools”),
+React.createElement(“section”, { className: “mod-section” },
+React.createElement(“h3”, null, “Chat Settings”),
+React.createElement(“div”, { className: “toggle-grid” },
+[
+{ key:“slow_mode”, label:“Slow Mode”, val:slowMode, set:setSlowMode },
+{ key:“subscriber_mode”, label:“Subs Only”, val:subOnly, set:setSubOnly },
+{ key:“emote_mode”, label:“Emotes Only”, val:emotesOnly, set:setEmotesOnly },
+{ key:“follower_mode”, label:“Followers Only”, val:followerOnly, set:setFollowerOnly },
+].map(({ key, label, val, set }) => React.createElement(“label”, { key, className: “toggle-item” },
+React.createElement(“span”, null, label),
+React.createElement(“div”, { className: `toggle ${val?"on":""}`, onClick: () => { const next=!val; set(next); toggleChatSetting(key, next); } },
+React.createElement(“div”, { className: “toggle-thumb” })
+)
+))
+)
+),
+React.createElement(“section”, { className: “mod-section” },
+React.createElement(“h3”, null, “User Lookup”),
+React.createElement(“div”, { className: “user-search-row” },
+React.createElement(“input”, { className: “input”, placeholder: “Search username…”, id: “userSearchInput” }),
+React.createElement(“button”, { className: “btn-primary”, onClick: () => setModal({ type: “user-lookup”, data: { login: document.getElementById(“userSearchInput”).value } }) }, “Lookup”)
+)
+),
+React.createElement(“section”, { className: “mod-section” },
+React.createElement(“h3”, null, “Quick Actions”),
+React.createElement(“div”, { className: “quick-actions” },
+React.createElement(“button”, { className: “qa-btn”, onClick: () => setModal({ type: “poll” }) }, “📊 Create Poll”),
+React.createElement(“button”, { className: “qa-btn”, onClick: () => setModal({ type: “prediction” }) }, “🔮 Prediction”),
+React.createElement(“button”, { className: “qa-btn”, onClick: () => setModal({ type: “raid” }) }, “⚡ Raid”),
+React.createElement(“button”, { className: “qa-btn”, onClick: () => setModal({ type: “edit-title” }) }, “✏️ Edit Title”),
+React.createElement(“button”, { className: “qa-btn danger”, onClick: clearChat }, “🗑 Clear Chat”)
+)
+)
+),
 
-  activeTab === "polls" && React.createElement("div", { className: "polls-panel" },
-    React.createElement("div", { className: "polls-header" },
-      React.createElement("h2", null, "Polls & Predictions"),
-      React.createElement("div", { className: "btn-row" },
-        React.createElement("button", { className: "btn-primary", onClick: () => setModal({ type: "poll" }) }, "+ New Poll"),
-        React.createElement("button", { className: "btn-purple", onClick: () => setModal({ type: "prediction" }) }, "+ Prediction"),
-        React.createElement("button", { className: "btn-ghost", onClick: loadPolls }, "Refresh")
-      )
-    ),
-    polls.length === 0
-      ? React.createElement("div", { className: "empty-state" }, "No polls yet. Create one or click Refresh!")
-      : polls.map(poll => React.createElement("div", { key: poll.id, className: "poll-card" },
-          React.createElement("div", { className: "poll-title" }, poll.title),
-          React.createElement("div", { className: "poll-status" }, poll.status),
-          React.createElement("div", { className: "poll-choices" },
-            poll.choices.map(c => React.createElement("div", { key: c.id, className: "poll-choice" },
-              React.createElement("span", null, c.title),
-              React.createElement("span", { className: "poll-votes" }, `${c.votes} votes`)
-            ))
-          ),
-          poll.status === "ACTIVE" && React.createElement("div", { className: "btn-row" },
-            React.createElement("button", { className: "btn-warning", onClick: () => endPoll(poll.id, "TERMINATED") }, "End Poll"),
-            React.createElement("button", { className: "btn-danger-sm", onClick: () => endPoll(poll.id, "ARCHIVED") }, "Archive")
-          )
-        ))
-  )
+activeTab === “polls” && React.createElement(“div”, { className: “polls-panel” },
+React.createElement(“div”, { className: “polls-header” },
+React.createElement(“h2”, null, “Polls & Predictions”),
+React.createElement(“div”, { className: “btn-row” },
+React.createElement(“button”, { className: “btn-primary”, onClick: () => setModal({ type: “poll” }) }, “+ New Poll”),
+React.createElement(“button”, { className: “btn-purple”, onClick: () => setModal({ type: “prediction” }) }, “+ Prediction”),
+React.createElement(“button”, { className: “btn-ghost”, onClick: loadPolls }, “Refresh”)
+)
+),
+polls.length === 0
+? React.createElement(“div”, { className: “empty-state” }, “No polls yet. Create one or click Refresh!”)
+: polls.map(poll => React.createElement(“div”, { key: poll.id, className: “poll-card” },
+React.createElement(“div”, { className: “poll-title” }, poll.title),
+React.createElement(“div”, { className: “poll-status” }, poll.status),
+React.createElement(“div”, { className: “poll-choices” },
+poll.choices.map(c => React.createElement(“div”, { key: c.id, className: “poll-choice” },
+React.createElement(“span”, null, c.title),
+React.createElement(“span”, { className: “poll-votes” }, `${c.votes} votes`)
+))
+),
+poll.status === “ACTIVE” && React.createElement(“div”, { className: “btn-row” },
+React.createElement(“button”, { className: “btn-warning”, onClick: () => endPoll(poll.id, “TERMINATED”) }, “End Poll”),
+React.createElement(“button”, { className: “btn-danger-sm”, onClick: () => endPoll(poll.id, “ARCHIVED”) }, “Archive”)
+)
+))
+)
 ),
 
 renderModal(),
 React.createElement(Toast, { toasts }),
-loading && React.createElement("div", { className: "loading-overlay" }, React.createElement("div", { className: "spinner" }))
-```
-
-);
-}
-
-function UserLookupModal({ token, me, channel, onBan, onTimeout, onUnban, onClose, toast }) {
-const [login, setLogin] = useState(””);
-const [user, setUser] = useState(null);
-const [loading, setLoading] = useState(false);
-
-async function search() {
-if (!login.trim()) return;
-setLoading(true);
-try {
-const d = await twitchAPI(`/users?login=${login.trim()}`, token);
-const u = d.data?.[0];
-if (!u) { toast(“User not found”, “error”); return; }
-setUser(u);
-} catch (e) { toast(e.message, “error”); }
-finally { setLoading(false); }
-}
-
-return React.createElement(Modal, { title: “User Lookup”, onClose },
-React.createElement(“div”, { className: “user-lookup” },
-React.createElement(“div”, { className: “search-row” },
-React.createElement(“input”, { className: “input”, placeholder: “Username”, value: login, onChange: e => setLogin(e.target.value), onKeyDown: e => e.key===“Enter” && search() }),
-React.createElement(“button”, { className: “btn-primary”, onClick: search }, loading ? “…” : “Search”)
-),
-user && React.createElement(“div”, { className: “user-profile” },
-React.createElement(“img”, { src: user.profile_image_url, alt: “”, className: “avatar-md” }),
-React.createElement(“div”, { className: “user-info” },
-React.createElement(“strong”, null, user.display_name),
-React.createElement(“span”, null, `@${user.login}`),
-React.createElement(“span”, { className: “user-desc” }, user.description?.slice(0,80) || “No description”)
-),
-React.createElement(“div”, { className: “user-actions-btns” },
-React.createElement(“button”, { className: “btn-warning”, onClick: () => onTimeout({ userId: user.id, displayName: user.display_name }) }, “Timeout”),
-React.createElement(“button”, { className: “btn-danger”, onClick: () => onBan({ userId: user.id, displayName: user.display_name }) }, “Ban”),
-React.createElement(“button”, { className: “btn-ghost”, onClick: () => onUnban(user.id) }, “Unban”)
-)
-)
-)
+loading && React.createElement(“div”, { className: “loading-overlay” }, React.createElement(“div”, { className: “spinner” }))
 );
 }
 
