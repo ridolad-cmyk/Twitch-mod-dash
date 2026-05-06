@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TwitchMod Pro</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e10;--bg2:#18181b;--bg3:#1f1f23;--border:#2a2a2e;
+  --purple:#9147ff;--purple-light:#a970ff;--text:#efeff1;--text-muted:#adadb8;
+  --red:#eb0400;--orange:#ff9147;--green:#00c853;--radius:8px;
+  --font:'Space Grotesk',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+a{color:var(--purple-light)}
+.setup-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#1a0f2e 0%,var(--bg) 70%)}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:48px;max-width:520px;width:100%;text-align:center}
+.setup-logo{margin-bottom:16px}
+.setup-card h1{font-size:32px;font-weight:700;margin-bottom:8px}
+.setup-sub{color:var(--text-muted);margin-bottom:32px}
+.setup-warning{text-align:left;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+.setup-warning h3{margin-bottom:12px;color:var(--orange)}
+.setup-warning p{color:var(--text-muted);margin-bottom:12px}
+.setup-warning ol{padding-left:20px;line-height:1.9;color:var(--text-muted)}
+.setup-warning strong{color:var(--text)}
+.setup-warning code{background:var(--bg);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;word-break:break-all}
+.btn-twitch{display:inline-flex;align-items:center;gap:10px;background:var(--purple);color:white;border:none;border-radius:var(--radius);padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-twitch:hover{background:var(--purple-light)}
+.channel-select-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#1a0f2e 0%,var(--bg) 70%)}
+.channel-select-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:480px;width:100%}
+.channel-select-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.channel-select-header h2{font-size:18px;margin-bottom:2px}
+.channel-select-header p{color:var(--text-muted);font-size:13px}
+.avatar{width:44px;height:44px;border-radius:50%}
+.channel-list{display:flex;flex-direction:column;gap:8px}
+.channel-item{display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;text-align:left;color:var(--text);width:100%}
+.channel-item:hover{border-color:var(--purple);background:#1a1a24}
+.channel-avatar-wrap{width:40px;height:40px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0}
+.channel-item-info{display:flex;flex-direction:column}
+.channel-item-info strong{font-size:15px}
+.channel-item-info span{color:var(--text-muted);font-size:12px}
+.channel-arrow{margin-left:auto;color:var(--text-muted)}
+.empty-state{color:var(--text-muted);text-align:center;padding:32px 0}
+.dashboard{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:18px 16px;font-size:18px;font-weight:700;border-bottom:1px solid var(--border)}
+.sidebar-channel{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sidebar-channel-name{font-weight:600;font-size:15px;margin-bottom:4px}
+.live-badge{background:#eb0400;color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px}
+.offline-badge{color:var(--text-muted);font-size:12px}
+.sidebar-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:none;background:none;color:var(--text-muted);cursor:pointer;font-family:var(--font);font-size:14px;font-weight:500;transition:background .15s,color .15s;text-align:left;width:100%}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:rgba(145,71,255,0.18);color:var(--purple-light)}
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px}
+.avatar-sm{width:28px;height:28px;border-radius:50%}
+.avatar-md{width:56px;height:56px;border-radius:50%}
+.sidebar-footer span{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.main-content{flex:1;overflow:auto;background:var(--bg)}
+.chat-panel{display:flex;flex-direction:column;height:100vh}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.chat-header h2{font-size:16px}
+.chat-channel{color:var(--purple-light);font-weight:400;font-size:14px}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.chat-empty{color:var(--text-muted);text-align:center;padding:40px 0}
+.chat-message{display:flex;align-items:flex-start;gap:6px;padding:5px 8px;border-radius:6px;transition:background .1s;position:relative;flex-wrap:wrap}
+.chat-message:hover{background:var(--bg2)}
+.chat-message:hover .chat-actions{opacity:1}
+.badges{display:flex;gap:2px;align-items:center}
+.badge{font-size:12px}
+.chat-username{font-weight:600;font-size:13px;white-space:nowrap}
+.chat-text{color:var(--text);font-size:13px;flex:1;word-break:break-word}
+.chat-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;margin-left:auto}
+.chat-actions button{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:background .1s}
+.chat-actions button:hover{background:var(--bg3)}
+.chat-input-row{display:flex;gap:10px;padding:14px 16px;background:var(--bg2);border-top:1px solid var(--border)}
+.chat-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-family:var(--font);font-size:14px;outline:none;transition:border-color .15s}
+.chat-input:focus{border-color:var(--purple)}
+.btn-send{background:var(--purple);color:white;border:none;border-radius:var(--radius);padding:10px 20px;font-family:var(--font);font-weight:600;cursor:pointer;transition:background .2s}
+.btn-send:hover{background:var(--purple-light)}
+.stream-panel{padding:20px;display:flex;flex-direction:column;gap:20px}
+.stream-embed-wrap{background:#000;border-radius:12px;overflow:hidden;aspect-ratio:16/9;max-width:900px}
+.stream-embed{width:100%;height:100%;display:block}
+.offline-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-muted);min-height:300px}
+.stream-info-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:900px;display:flex;flex-direction:column;gap:14px}
+.stream-info-row{display:flex;align-items:center;gap:12px}
+.info-label{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;width:80px;flex-shrink:0}
+.info-value{flex:1;font-weight:500}
+.btn-edit{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;transition:all .15s}
+.btn-edit:hover{border-color:var(--purple);color:var(--text)}
+.modtools-panel{padding:24px;max-width:700px}
+.modtools-panel h2{font-size:22px;margin-bottom:20px}
+.mod-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.mod-section h3{font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:16px}
+.toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toggle-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:var(--radius);padding:12px 14px;cursor:pointer}
+.toggle{width:40px;height:22px;background:var(--border);border-radius:11px;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--purple)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:left .2s}
+.toggle.on .toggle-thumb{left:21px}
+.user-search-row{display:flex;gap:10px}
+.quick-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.qa-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:12px 16px;cursor:pointer;font-family:var(--font);font-size:14px;font-weight:500;transition:all .15s;text-align:left}
+.qa-btn:hover{border-color:var(--purple);background:#1e1e2e}
+.qa-btn.danger:hover{border-color:var(--red)}
+.polls-panel{padding:24px}
+.polls-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.polls-header h2{font-size:22px}
+.poll-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+.poll-title{font-size:16px;font-weight:600}
+.poll-status{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.poll-choices{display:flex;flex-direction:column;gap:8px}
+.poll-choice{display:flex;justify-content:space-between;background:var(--bg3);border-radius:6px;padding:8px 12px}
+.poll-votes{color:var(--purple-light);font-weight:600}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-header h3{font-size:16px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;border-radius:4px;transition:color .15s}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}
+.modal-note{color:var(--text-muted);font-size:13px}
+.input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-family:var(--font);font-size:14px;outline:none;width:100%;transition:border-color .15s}
+.input:focus{border-color:var(--purple)}
+select.input{cursor:pointer}
+.btn-primary,.btn-danger,.btn-warning,.btn-ghost,.btn-purple,.btn-danger-sm,.btn-ghost-sm{border:none;border-radius:var(--radius);padding:10px 18px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:14px;transition:all .15s}
+.btn-primary{background:var(--purple);color:white}
+.btn-primary:hover{background:var(--purple-light)}
+.btn-danger{background:var(--red);color:white}
+.btn-danger:hover{filter:brightness(1.1)}
+.btn-warning{background:var(--orange);color:#1a1a1a}
+.btn-warning:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--purple)}
+.btn-purple{background:rgba(145,71,255,.2);border:1px solid var(--purple);color:var(--purple-light)}
+.btn-purple:hover{background:rgba(145,71,255,.35)}
+.btn-danger-sm{background:none;border:1px solid var(--red);color:var(--red);padding:6px 12px;font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--font);font-weight:600;transition:all .15s}
+.btn-danger-sm:hover{background:rgba(235,4,0,.1)}
+.btn-ghost-sm{background:none;border:1px solid var(--border);color:var(--text-muted);padding:5px 10px;font-size:12px;border-radius:6px;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-ghost-sm:hover{color:var(--text);border-color:var(--text-muted)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn-row.mt{margin-top:4px}
+.user-lookup{display:flex;flex-direction:column;gap:16px}
+.search-row{display:flex;gap:10px}
+.user-profile{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.user-info{display:flex;flex-direction:column;gap:3px;flex:1}
+.user-info strong{font-size:15px}
+.user-info span{color:var(--text-muted);font-size:12px}
+.user-desc{font-size:12px;color:var(--text-muted)}
+.user-actions-btns{display:flex;flex-direction:column;gap:6px}
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{padding:12px 18px;border-radius:8px;font-weight:500;font-size:14px;animation:slideIn .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.toast-success{background:#0d2e1a;border:1px solid #00c853;color:#00c853}
+.toast-error{background:#2e0d0d;border:1px solid var(--red);color:#ff6b6b}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#555}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const CLIENT_ID = “YOUR_CLIENT_ID_HERE”;
+const REDIRECT_URI = window.location.origin + window.location.pathname;
+const SCOPES = [
+“user:read:email”,“moderation:read”,“moderator:manage:banned_users”,
+“moderator:manage:chat_messages”,“moderator:manage:chat_settings”,
+“moderator:read:chatters”,“channel:manage:polls”,“channel:manage:predictions”,
+“channel:read:polls”,“channel:read:predictions”,“channel:manage:broadcast”,
+“channel:manage:raids”,“chat:read”,“chat:edit”,“channel:moderate”,
+].join(” “);
+
+function getTokenFromHash() {
+const hash = window.location.hash.substring(1);
+const params = new URLSearchParams(hash);
+return params.get(“access_token”);
+}
+
+async function twitchAPI(endpoint, token, options = {}) {
+const res = await fetch(`https://api.twitch.tv/helix${endpoint}`, {
+headers: { Authorization: `Bearer ${token}`, “Client-Id”: CLIENT_ID, “Content-Type”: “application/json” },
+…options,
+});
+if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `API error ${res.status}`); }
+return res.json().catch(() => ({}));
+}
+
+function createChatConnection(token, username, channel, onMessage) {
+const ws = new WebSocket(“wss://irc-ws.chat.twitch.tv:443”);
+ws.onopen = () => {
+ws.send(`PASS oauth:${token}`);
+ws.send(`NICK ${username}`);
+ws.send(`CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership`);
+ws.send(`JOIN #${channel}`);
+};
+ws.onmessage = (e) => {
+const lines = e.data.split(”\r\n”).filter(Boolean);
+lines.forEach((line) => {
+if (line.startsWith(“PING”)) { ws.send(“PONG :tmi.twitch.tv”); return; }
+const tagMatch = line.match(/^@([^ ]+) :([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.+)$/);
+if (tagMatch) {
+const tags = Object.fromEntries(tagMatch[1].split(”;”).map(t => t.split(”=”)));
+onMessage({
+id: tags.id || Math.random().toString(36),
+user: tagMatch[2], displayName: tags[“display-name”] || tagMatch[2],
+color: tags.color || “#9147ff”, text: tagMatch[3],
+badges: tags.badges || “”, ts: Date.now(),
+});
+}
+});
+};
+return ws;
+}
+
+function Badge({ badges }) {
+const list = (badges || “”).split(”,”).map(b => b.split(”/”)[0]).filter(Boolean);
+return React.createElement(“span”, { className: “badges” },
+list.map(b => React.createElement(“span”, { key: b, className: `badge badge-${b}`, title: b },
+b === “broadcaster” ? “🎙” : b === “moderator” ? “⚔️” : b === “subscriber” ? “⭐” : b === “vip” ? “💎” : “”
+))
+);
+}
+
+function Modal({ title, children, onClose }) {
+return React.createElement(“div”, { className: “modal-overlay”, onClick: onClose },
+React.createElement(“div”, { className: “modal”, onClick: e => e.stopPropagation() },
+React.createElement(“div”, { className: “modal-header” },
+React.createElement(“h3”, null, title),
+React.createElement(“button”, { className: “modal-close”, onClick: onClose }, “✕”)
+),
+React.createElement(“div”, { className: “modal-body” }, children)
+)
+);
+}
+
+function Toast({ toasts }) {
+return React.createElement(“div”, { className: “toast-container” },
+toasts.map(t => React.createElement(“div”, { key: t.id, className: `toast toast-${t.type}` }, t.msg))
+);
+}
+
+function App() {
+const [token, setToken] = useState(() => {
+const fromHash = getTokenFromHash();
+if (fromHash) { sessionStorage.setItem(“twitch_token”, fromHash); window.history.replaceState({}, document.title, window.location.pathname); return fromHash; }
+return sessionStorage.getItem(“twitch_token”);
+});
+const [me, setMe] = useState(null);
+const [modChannels, setModChannels] = useState([]);
+const [selectedChannel, setSelectedChannel] = useState(null);
+const [channelInfo, setChannelInfo] = useState(null);
+const [streamInfo, setStreamInfo] = useState(null);
+const [chat, setChat] = useState([]);
+const [chatInput, setChatInput] = useState(””);
+const [modal, setModal] = useState(null);
+const [toasts, setToasts] = useState([]);
+const [activeTab, setActiveTab] = useState(“chat”);
+const [polls, setPolls] = useState([]);
+const [slowMode, setSlowMode] = useState(false);
+const [subOnly, setSubOnly] = useState(false);
+const [emotesOnly, setEmotesOnly] = useState(false);
+const [followerOnly, setFollowerOnly] = useState(false);
+const [loading, setLoading] = useState(false);
+const chatRef = useRef(null);
+const wsRef = useRef(null);
+const toastIdRef = useRef(0);
+
+const toast = useCallback((msg, type = “success”) => {
+const id = ++toastIdRef.current;
+setToasts(p => […p, { id, msg, type }]);
+setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000);
+}, []);
+
+useEffect(() => {
+if (!token) return;
+twitchAPI(”/users”, token).then(d => setMe(d.data?.[0])).catch(() => { setToken(null); sessionStorage.removeItem(“twitch_token”); });
+}, [token]);
+
+useEffect(() => {
+if (!token || !me) return;
+twitchAPI(`/moderation/channels?user_id=${me.id}&first=100`, token).then(d => setModChannels(d.data || [])).catch(() => {});
+}, [token, me]);
+
+useEffect(() => {
+if (!token || !selectedChannel || !me) return;
+const cid = selectedChannel.broadcaster_id;
+twitchAPI(`/channels?broadcaster_id=${cid}`, token).then(d => setChannelInfo(d.data?.[0]));
+twitchAPI(`/streams?user_id=${cid}`, token).then(d => setStreamInfo(d.data?.[0] || null));
+twitchAPI(`/chat/settings?broadcaster_id=${cid}&moderator_id=${me.id}`, token).then(d => {
+const s = d.data?.[0] || {};
+setSlowMode(s.slow_mode || false); setSubOnly(s.subscriber_mode || false);
+setEmotesOnly(s.emote_mode || false); setFollowerOnly(s.follower_mode || false);
+});
+if (wsRef.current) wsRef.current.close();
+const ws = createChatConnection(token, me.login, selectedChannel.broadcaster_login, (msg) => {
+setChat(prev => […prev.slice(-199), msg]);
+});
+wsRef.current = ws;
+return () => ws.close();
+}, [token, selectedChannel, me]);
+
+useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chat]);
+
+function login() {
+const url = `https://id.twitch.tv/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}`;
+window.location.href = url;
+}
+function logout() { setToken(null); setMe(null); setSelectedChannel(null); setChat([]); sessionStorage.removeItem(“twitch_token”); }
+
+async function sendChat() {
+if (!chatInput.trim() || !wsRef.current) return;
+wsRef.current.send(`PRIVMSG #${selectedChannel.broadcaster_login} :${chatInput}`);
+setChatInput(””);
+}
+
+async function apiAction(fn, successMsg) {
+setLoading(true);
+try { await fn(); toast(successMsg); }
+catch (e) { toast(e.message, “error”); }
+finally { setLoading(false); setModal(null); }
+}
+
+async function toggleChatSetting(key, value) {
+const cid = selectedChannel.broadcaster_id;
+const body = {};
+if (key === “slow_mode”) { body.slow_mode = value; if (value) body.slow_mode_wait_time = 30; }
+if (key === “subscriber_mode”) body.subscriber_mode = value;
+if (key === “emote_mode”) body.emote_mode = value;
+if (key === “follower_mode”) { body.follower_mode = value; if (value) body.follower_mode_duration = 0; }
+await apiAction(() => twitchAPI(`/chat/settings?broadcaster_id=${cid}&moderator_id=${me.id}`, token, { method: “PATCH”, body: JSON.stringify(body) }), “Chat setting updated”);
+}
+
+async function banUser(userId, duration, reason) {
+const body = duration ? { data: { user_id: userId, duration: parseInt(duration), reason } } : { data: { user_id: userId, reason } };
+await apiAction(() => twitchAPI(`/moderation/bans?broadcaster_id=${selectedChannel.broadcaster_id}&moderator_id=${me.id}`, token, { method: “POST”, body: JSON.stringify(body) }), duration ? `Timed out for ${duration}s` : “User banned”);
+}
+
+async function unbanUser(userId) {
+await apiAction(() => twitchAPI(`/moderation/bans?broadcaster_id=${selectedChannel.broadcaster_id}&moderator_id=${me.id}&user_id=${userId}`, token, { method: “DELETE” }), “User unbanned”);
+}
+
+async function deleteMessage(msgId) {
+await apiAction(() => twitchAPI(`/moderation/chat?broadcaster_id=${selectedChannel.broadcaster_id}&moderator_id=${me.id}&message_id=${msgId}`, token, { method: “DELETE” }), “Message deleted”);
+}
+
+async function clearChat() {
+await apiAction(() => twitchAPI(`/moderation/chat?broadcaster_id=${selectedChannel.broadcaster_id}&moderator_id=${me.id}`, token, { method: “DELETE” }), “Chat cleared”);
+}
+
+async function updateTitle(title) {
+await apiAction(() => twitchAPI(`/channels?broadcaster_id=${selectedChannel.broadcaster_id}`, token, { method: “PATCH”, body: JSON.stringify({ title }) }), “Title updated”);
+twitchAPI(`/channels?broadcaster_id=${selectedChannel.broadcaster_id}`, token).then(d => setChannelInfo(d.data?.[0]));
+}
+
+async function createPoll(title, choices, duration) {
+await apiAction(() => twitchAPI(”/polls”, token, { method: “POST”, body: JSON.stringify({ broadcaster_id: selectedChannel.broadcaster_id, title, duration: parseInt(duration), choices: choices.filter(Boolean).map(c => ({ title: c })) }) }), “Poll created!”);
+}
+
+async function endPoll(pollId, status) {
+await apiAction(() => twitchAPI(”/polls”, token, { method: “PATCH”, body: JSON.stringify({ broadcaster_id: selectedChannel.broadcaster_id, id: pollId, status }) }), `Poll ${status.toLowerCase()}`);
+}
+
+async function loadPolls() {
+const d = await twitchAPI(`/polls?broadcaster_id=${selectedChannel.broadcaster_id}`, token);
+setPolls(d.data || []);
+}
+
+async function createPrediction(title, outcomes, duration) {
+await apiAction(() => twitchAPI(”/predictions”, token, { method: “POST”, body: JSON.stringify({ broadcaster_id: selectedChannel.broadcaster_id, title, prediction_window: parseInt(duration), outcomes: outcomes.filter(Boolean).map(o => ({ title: o })) }) }), “Prediction created!”);
+}
+
+async function startRaid(targetLogin) {
+const userData = await twitchAPI(`/users?login=${targetLogin}`, token);
+const targetId = userData.data?.[0]?.id;
+if (!targetId) { toast(“User not found”, “error”); return; }
+await apiAction(() => twitchAPI(`/raids?from_broadcaster_id=${selectedChannel.broadcaster_id}&to_broadcaster_id=${targetId}`, token, { method: “POST” }), `Raiding ${targetLogin}!`);
+}
+
+function renderModal() {
+if (!modal) return null;
+const { type, data } = modal;
+let newTitle = channelInfo?.title || “”;
+
+```
+if (type === "edit-title") return React.createElement(Modal, { title: "Edit Stream Title", onClose: () => setModal(null) },
+  React.createElement("input", { className: "input", defaultValue: newTitle, onChange: e => newTitle = e.target.value, placeholder: "Stream title" }),
+  React.createElement("button", { className: "btn-primary", onClick: () => updateTitle(newTitle) }, "Save Title")
+);
+
+if (type === "ban-user") {
+  let reason = "";
+  return React.createElement(Modal, { title: `Ban ${data.displayName}`, onClose: () => setModal(null) },
+    React.createElement("p", { className: "modal-note" }, "This will permanently ban the user."),
+    React.createElement("input", { className: "input", placeholder: "Reason (optional)", onChange: e => reason = e.target.value }),
+    React.createElement("button", { className: "btn-danger", onClick: () => banUser(data.userId, null, reason) }, "Confirm Ban")
+  );
+}
+
+if (type === "timeout") {
+  let duration = "600"; let reason = "";
+  return React.createElement(Modal, { title: `Timeout ${data.displayName}`, onClose: () => setModal(null) },
+    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "600" },
+      React.createElement("option", { value: "60" }, "1 minute"),
+      React.createElement("option", { value: "300" }, "5 minutes"),
+      React.createElement("option", { value: "600" }, "10 minutes"),
+      React.createElement("option", { value: "1800" }, "30 minutes"),
+      React.createElement("option", { value: "3600" }, "1 hour"),
+      React.createElement("option", { value: "86400" }, "1 day"),
+      React.createElement("option", { value: "604800" }, "1 week")
+    ),
+    React.createElement("input", { className: "input", placeholder: "Reason (optional)", onChange: e => reason = e.target.value }),
+    React.createElement("button", { className: "btn-warning", onClick: () => banUser(data.userId, duration, reason) }, "Timeout")
+  );
+}
+
+if (type === "poll") {
+  let ptitle = ""; let choices = ["","","","",""]; let duration = "60";
+  return React.createElement(Modal, { title: "Create Poll", onClose: () => setModal(null) },
+    React.createElement("input", { className: "input", placeholder: "Poll question", onChange: e => ptitle = e.target.value }),
+    ...[0,1,2,3,4].map(i => React.createElement("input", { key: i, className: "input", placeholder: `Choice ${i+1}${i<2?" (required)":" (optional)"}`, onChange: e => { choices[i] = e.target.value; } })),
+    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "60" },
+      React.createElement("option", { value: "30" }, "30 seconds"),
+      React.createElement("option", { value: "60" }, "1 minute"),
+      React.createElement("option", { value: "120" }, "2 minutes"),
+      React.createElement("option", { value: "300" }, "5 minutes")
+    ),
+    React.createElement("button", { className: "btn-primary", onClick: () => createPoll(ptitle, choices, duration) }, "Create Poll")
+  );
+}
+
+if (type === "prediction") {
+  let ptitle = ""; let outcomes = ["",""]; let duration = "120";
+  return React.createElement(Modal, { title: "Create Prediction", onClose: () => setModal(null) },
+    React.createElement("input", { className: "input", placeholder: "Prediction title", onChange: e => ptitle = e.target.value }),
+    React.createElement("input", { className: "input", placeholder: "Outcome 1 (e.g. Yes)", onChange: e => { outcomes[0] = e.target.value; } }),
+    React.createElement("input", { className: "input", placeholder: "Outcome 2 (e.g. No)", onChange: e => { outcomes[1] = e.target.value; } }),
+    React.createElement("select", { className: "input", onChange: e => duration = e.target.value, defaultValue: "120" },
+      React.createElement("option", { value: "30" }, "30 seconds"),
+      React.createElement("option", { value: "60" }, "1 minute"),
+      React.createElement("option", { value: "120" }, "2 minutes"),
+      React.createElement("option", { value: "300" }, "5 minutes")
+    ),
+    React.createElement("button", { className: "btn-primary", onClick: () => createPrediction(ptitle, outcomes, duration) }, "Start Prediction")
+  );
+}
+
+if (type === "raid") {
+  let target = "";
+  return React.createElement(Modal, { title: "Start a Raid", onClose: () => setModal(null) },
+    React.createElement("input", { className: "input", placeholder: "Channel to raid", onChange: e => target = e.target.value }),
+    React.createElement("button", { className: "btn-primary", onClick: () => startRaid(target) }, "Start Raid")
+  );
+}
+
+if (type === "user-lookup") {
+  return React.createElement(UserLookupModal, {
+    token, me, channel: selectedChannel,
+    onBan: u => setModal({ type: "ban-user", data: u }),
+    onTimeout: u => setModal({ type: "timeout", data: u }),
+    onUnban: async id => { await unbanUser(id); setModal(null); },
+    onClose: () => setModal(null), toast
+  });
+}
+return null;
+```
+
+}
+
+// SETUP SCREEN
+if (!token) return React.createElement(“div”, { className: “setup-screen” },
+React.createElement(“div”, { className: “setup-card” },
+React.createElement(“div”, { className: “setup-logo” },
+React.createElement(“svg”, { width: 48, height: 48, viewBox: “0 0 24 24”, fill: “#9147ff” }, React.createElement(“path”, { d: “M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z” }))
+),
+React.createElement(“h1”, null, “TwitchMod Pro”),
+React.createElement(“p”, { className: “setup-sub” }, “Full moderator dashboard for your channels”),
+CLIENT_ID === “YOUR_CLIENT_ID_HERE”
+? React.createElement(“div”, { className: “setup-warning” },
+React.createElement(“h3”, null, “⚙️ Setup Required”),
+React.createElement(“p”, null, “You need a Twitch Client ID to use this app:”),
+React.createElement(“ol”, null,
+React.createElement(“li”, null, React.createElement(“a”, { href: “https://dev.twitch.tv/console”, target: “_blank” }, “dev.twitch.tv/console”), “ → Register Your Application”),
+React.createElement(“li”, null, “OAuth Redirect URL: “, React.createElement(“code”, null, REDIRECT_URI)),
+React.createElement(“li”, null, “Category: Other → Create”),
+React.createElement(“li”, null, “Copy the Client ID”),
+React.createElement(“li”, null, “Edit index.html and replace “, React.createElement(“code”, null, “YOUR_CLIENT_ID_HERE”), “ with it”)
+)
+)
+: React.createElement(“button”, { className: “btn-twitch”, onClick: login },
+React.createElement(“svg”, { width: 20, height: 20, viewBox: “0 0 24 24”, fill: “white” }, React.createElement(“path”, { d: “M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z” })),
+“Connect with Twitch”
+)
+)
+);
+
+// CHANNEL SELECT
+if (!selectedChannel) return React.createElement(“div”, { className: “channel-select-screen” },
+React.createElement(“div”, { className: “channel-select-card” },
+React.createElement(“div”, { className: “channel-select-header” },
+React.createElement(“img”, { src: me?.profile_image_url, alt: “”, className: “avatar” }),
+React.createElement(“div”, null,
+React.createElement(“h2”, null, `Welcome, ${me?.display_name}`),
+React.createElement(“p”, null, “Select a channel you moderate”)
+),
+React.createElement(“button”, { className: “btn-ghost”, onClick: logout, style: { marginLeft: “auto” } }, “Logout”)
+),
+modChannels.length === 0
+? React.createElement(“div”, { className: “empty-state” }, “No moderated channels found.”)
+: React.createElement(“div”, { className: “channel-list” },
+modChannels.map(ch => React.createElement(“button”, { key: ch.broadcaster_id, className: “channel-item”, onClick: () => setSelectedChannel(ch) },
+React.createElement(“div”, { className: “channel-avatar-wrap” }, ch.broadcaster_name[0]),
+React.createElement(“div”, { className: “channel-item-info” },
+React.createElement(“strong”, null, ch.broadcaster_name),
+React.createElement(“span”, null, `@${ch.broadcaster_login}`)
+),
+React.createElement(“span”, { className: “channel-arrow” }, “→”)
+))
+)
+)
+);
+
+// MAIN DASHBOARD
+return React.createElement(“div”, { className: “dashboard” },
+// Sidebar
+React.createElement(“aside”, { className: “sidebar” },
+React.createElement(“div”, { className: “sidebar-brand” },
+React.createElement(“svg”, { width: 24, height: 24, viewBox: “0 0 24 24”, fill: “#9147ff” }, React.createElement(“path”, { d: “M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z” })),
+“ModPro”
+),
+React.createElement(“div”, { className: “sidebar-channel” },
+React.createElement(“div”, { className: “sidebar-channel-name” }, selectedChannel.broadcaster_name),
+streamInfo ? React.createElement(“span”, { className: “live-badge” }, “● LIVE”) : React.createElement(“span”, { className: “offline-badge” }, “OFFLINE”)
+),
+React.createElement(“nav”, { className: “sidebar-nav” },
+[{ id:“chat”,icon:“💬”,label:“Chat”},{ id:“stream”,icon:“📺”,label:“Stream”},{ id:“modtools”,icon:“⚔️”,label:“Mod Tools”},{ id:“polls”,icon:“📊”,label:“Polls”}]
+.map(tab => React.createElement(“button”, { key: tab.id, className: `nav-item ${activeTab===tab.id?"active":""}`, onClick: () => setActiveTab(tab.id) },
+React.createElement(“span”, null, tab.icon), “ “, tab.label
+))
+),
+React.createElement(“div”, { className: “sidebar-footer” },
+React.createElement(“img”, { src: me?.profile_image_url, alt: “”, className: “avatar-sm” }),
+React.createElement(“span”, null, me?.display_name),
+React.createElement(“button”, { className: “btn-ghost-sm”, onClick: () => { setSelectedChannel(null); setChat([]); if (wsRef.current) wsRef.current.close(); } }, “← Back”)
+)
+),
+
+```
+// Main
+React.createElement("main", { className: "main-content" },
+  activeTab === "chat" && React.createElement("div", { className: "chat-panel" },
+    React.createElement("div", { className: "chat-header" },
+      React.createElement("h2", null, "Live Chat ", React.createElement("span", { className: "chat-channel" }, `#${selectedChannel.broadcaster_login}`)),
+      React.createElement("button", { className: "btn-danger-sm", onClick: clearChat }, "Clear Chat")
+    ),
+    React.createElement("div", { className: "chat-messages", ref: chatRef },
+      chat.length === 0 ? React.createElement("div", { className: "chat-empty" }, "Waiting for messages...") : null,
+      chat.map(msg => React.createElement("div", { key: msg.id, className: "chat-message" },
+        React.createElement(Badge, { badges: msg.badges }),
+        React.createElement("span", { className: "chat-username", style: { color: msg.color || "#9147ff" } }, msg.displayName),
+        React.createElement("span", { className: "chat-text" }, " " + msg.text),
+        React.createElement("div", { className: "chat-actions" },
+          React.createElement("button", { onClick: () => setModal({ type: "timeout", data: { userId: msg.user, displayName: msg.displayName } }), title: "Timeout" }, "⏱"),
+          React.createElement("button", { onClick: () => setModal({ type: "ban-user", data: { userId: msg.user, displayName: msg.displayName } }), title: "Ban" }, "🔨"),
+          React.createElement("button", { onClick: () => deleteMessage(msg.id), title: "Delete" }, "🗑")
+        )
+      ))
+    ),
+    React.createElement("div", { className: "chat-input-row" },
+      React.createElement("input", { className: "chat-input", value: chatInput, onChange: e => setChatInput(e.target.value), onKeyDown: e => e.key==="Enter" && sendChat(), placeholder: `Chat as ${me?.display_name}...` }),
+      React.createElement("button", { className: "btn-send", onClick: sendChat }, "Send")
+    )
+  ),
+
+  activeTab === "stream" && React.createElement("div", { className: "stream-panel" },
+    React.createElement("div", { className: "stream-embed-wrap" },
+      streamInfo
+        ? React.createElement("iframe", { src: `https://player.twitch.tv/?channel=${selectedChannel.broadcaster_login}&parent=${window.location.hostname}&muted=false`, allowFullScreen: true, frameBorder: "0", className: "stream-embed", title: "Twitch Stream" })
+        : React.createElement("div", { className: "offline-placeholder" },
+            React.createElement("svg", { width: 64, height: 64, viewBox: "0 0 24 24", fill: "#9147ff" }, React.createElement("path", { d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" })),
+            React.createElement("p", null, "Channel is currently offline")
+          )
+    ),
+    React.createElement("div", { className: "stream-info-card" },
+      React.createElement("div", { className: "stream-info-row" },
+        React.createElement("span", { className: "info-label" }, "Title"),
+        React.createElement("span", { className: "info-value" }, channelInfo?.title || "—"),
+        React.createElement("button", { className: "btn-edit", onClick: () => setModal({ type: "edit-title" }) }, "Edit")
+      ),
+      React.createElement("div", { className: "stream-info-row" },
+        React.createElement("span", { className: "info-label" }, "Category"),
+        React.createElement("span", { className: "info-value" }, channelInfo?.game_name || "—")
+      ),
+      streamInfo && React.createElement(React.Fragment, null,
+        React.createElement("div", { className: "stream-info-row" },
+          React.createElement("span", { className: "info-label" }, "Viewers"),
+          React.createElement("span", { className: "info-value" }, streamInfo.viewer_count?.toLocaleString())
+        )
+      ),
+      React.createElement("div", { className: "btn-row mt" },
+        React.createElement("button", { className: "btn-purple", onClick: () => setModal({ type: "raid" }) }, "⚡ Start Raid")
+      )
+    )
+  ),
+
+  activeTab === "modtools" && React.createElement("div", { className: "modtools-panel" },
+    React.createElement("h2", null, "Moderator Tools"),
+    React.createElement("section", { className: "mod-section" },
+      React.createElement("h3", null, "Chat Settings"),
+      React.createElement("div", { className: "toggle-grid" },
+        [
+          { key:"slow_mode", label:"Slow Mode", val:slowMode, set:setSlowMode },
+          { key:"subscriber_mode", label:"Subs Only", val:subOnly, set:setSubOnly },
+          { key:"emote_mode", label:"Emotes Only", val:emotesOnly, set:setEmotesOnly },
+          { key:"follower_mode", label:"Followers Only", val:followerOnly, set:setFollowerOnly },
+        ].map(({ key, label, val, set }) => React.createElement("label", { key, className: "toggle-item" },
+          React.createElement("span", null, label),
+          React.createElement("div", { className: `toggle ${val?"on":""}`, onClick: () => { const next=!val; set(next); toggleChatSetting(key, next); } },
+            React.createElement("div", { className: "toggle-thumb" })
+          )
+        ))
+      )
+    ),
+    React.createElement("section", { className: "mod-section" },
+      React.createElement("h3", null, "User Lookup"),
+      React.createElement("div", { className: "user-search-row" },
+        React.createElement("input", { className: "input", placeholder: "Search username...", id: "userSearchInput" }),
+        React.createElement("button", { className: "btn-primary", onClick: () => setModal({ type: "user-lookup", data: { login: document.getElementById("userSearchInput").value } }) }, "Lookup")
+      )
+    ),
+    React.createElement("section", { className: "mod-section" },
+      React.createElement("h3", null, "Quick Actions"),
+      React.createElement("div", { className: "quick-actions" },
+        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "poll" }) }, "📊 Create Poll"),
+        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "prediction" }) }, "🔮 Prediction"),
+        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "raid" }) }, "⚡ Raid"),
+        React.createElement("button", { className: "qa-btn", onClick: () => setModal({ type: "edit-title" }) }, "✏️ Edit Title"),
+        React.createElement("button", { className: "qa-btn danger", onClick: clearChat }, "🗑 Clear Chat")
+      )
+    )
+  ),
+
+  activeTab === "polls" && React.createElement("div", { className: "polls-panel" },
+    React.createElement("div", { className: "polls-header" },
+      React.createElement("h2", null, "Polls & Predictions"),
+      React.createElement("div", { className: "btn-row" },
+        React.createElement("button", { className: "btn-primary", onClick: () => setModal({ type: "poll" }) }, "+ New Poll"),
+        React.createElement("button", { className: "btn-purple", onClick: () => setModal({ type: "prediction" }) }, "+ Prediction"),
+        React.createElement("button", { className: "btn-ghost", onClick: loadPolls }, "Refresh")
+      )
+    ),
+    polls.length === 0
+      ? React.createElement("div", { className: "empty-state" }, "No polls yet. Create one or click Refresh!")
+      : polls.map(poll => React.createElement("div", { key: poll.id, className: "poll-card" },
+          React.createElement("div", { className: "poll-title" }, poll.title),
+          React.createElement("div", { className: "poll-status" }, poll.status),
+          React.createElement("div", { className: "poll-choices" },
+            poll.choices.map(c => React.createElement("div", { key: c.id, className: "poll-choice" },
+              React.createElement("span", null, c.title),
+              React.createElement("span", { className: "poll-votes" }, `${c.votes} votes`)
+            ))
+          ),
+          poll.status === "ACTIVE" && React.createElement("div", { className: "btn-row" },
+            React.createElement("button", { className: "btn-warning", onClick: () => endPoll(poll.id, "TERMINATED") }, "End Poll"),
+            React.createElement("button", { className: "btn-danger-sm", onClick: () => endPoll(poll.id, "ARCHIVED") }, "Archive")
+          )
+        ))
+  )
+),
+
+renderModal(),
+React.createElement(Toast, { toasts }),
+loading && React.createElement("div", { className: "loading-overlay" }, React.createElement("div", { className: "spinner" }))
+```
+
+);
+}
+
+function UserLookupModal({ token, me, channel, onBan, onTimeout, onUnban, onClose, toast }) {
+const [login, setLogin] = useState(””);
+const [user, setUser] = useState(null);
+const [loading, setLoading] = useState(false);
+
+async function search() {
+if (!login.trim()) return;
+setLoading(true);
+try {
+const d = await twitchAPI(`/users?login=${login.trim()}`, token);
+const u = d.data?.[0];
+if (!u) { toast(“User not found”, “error”); return; }
+setUser(u);
+} catch (e) { toast(e.message, “error”); }
+finally { setLoading(false); }
+}
+
+return React.createElement(Modal, { title: “User Lookup”, onClose },
+React.createElement(“div”, { className: “user-lookup” },
+React.createElement(“div”, { className: “search-row” },
+React.createElement(“input”, { className: “input”, placeholder: “Username”, value: login, onChange: e => setLogin(e.target.value), onKeyDown: e => e.key===“Enter” && search() }),
+React.createElement(“button”, { className: “btn-primary”, onClick: search }, loading ? “…” : “Search”)
+),
+user && React.createElement(“div”, { className: “user-profile” },
+React.createElement(“img”, { src: user.profile_image_url, alt: “”, className: “avatar-md” }),
+React.createElement(“div”, { className: “user-info” },
+React.createElement(“strong”, null, user.display_name),
+React.createElement(“span”, null, `@${user.login}`),
+React.createElement(“span”, { className: “user-desc” }, user.description?.slice(0,80) || “No description”)
+),
+React.createElement(“div”, { className: “user-actions-btns” },
+React.createElement(“button”, { className: “btn-warning”, onClick: () => onTimeout({ userId: user.id, displayName: user.display_name }) }, “Timeout”),
+React.createElement(“button”, { className: “btn-danger”, onClick: () => onBan({ userId: user.id, displayName: user.display_name }) }, “Ban”),
+React.createElement(“button”, { className: “btn-ghost”, onClick: () => onUnban(user.id) }, “Unban”)
+)
+)
+)
+);
+}
+
+ReactDOM.createRoot(document.getElementById(“root”)).render(React.createElement(App));
+</script>
+
+</body>
+</html>
